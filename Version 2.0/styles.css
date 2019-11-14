@@ -1,0 +1,74 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  padding: 4rem;
+}
+
+table {
+  border: 1px solid #48AAE6;
+}
+
+td {
+  background-color: #48AAE6;
+  height: 3rem;
+  width: 3rem;
+}
+
+.container {
+  display: inline-block;
+  position: relative;
+}
+
+.button {
+  position: absolute;
+  color: #FFFFFF;
+  margin: 2px;
+  height: 3rem;
+  width: 3rem;
+  font-size: 1.3rem;
+  font-weight: bold;
+  text-align: center;
+  transition-duration: .3s;
+  opacity: 1;
+  cursor: pointer;
+}
+
+.button:hover {
+  opacity: .8;
+  transition-duration: .4s;
+}
+
+.add {
+  background-color: #F3A500;
+  line-height: 3rem;
+}
+
+.add-column {
+  left: 100%;
+  top: 1px;
+}
+
+.add-row {
+  top: 100%;
+  left: 1px;
+}
+
+.remove {
+  background-color: #B20000;
+  line-height: 2.5rem;
+  display: block;
+  visibility: hidden;
+}
+
+.remove-column {
+  bottom: 100%;
+  margin: 2px 1px;
+}
+
+.remove-row {
+  right: 100%;
+  margin: 1px 2px;
+}

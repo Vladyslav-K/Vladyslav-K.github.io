@@ -4,46 +4,61 @@
 }
 
 body {
-  padding: 4rem;
+  padding: 65px;
 }
 
 table {
-  border: 1px solid #48AAE6;
+  border: 1px solid #48aae6;
 }
 
 td {
-  background-color: #48AAE6;
-  height: 3rem;
-  width: 3rem;
+  background-color: #48aae6;
+  height: 50px;
+  width: 50px;
+}
+
+.error {
+  font-size: 14px;
+  text-align: center;
+  padding: 10px;
+  border: 2px solid red;
+}
+
+.global-container {
+  display: flex;
+  justify-content: space-around;
 }
 
 .container {
   display: inline-block;
   position: relative;
+  left: 0;
+  top: 0;
+  height: 100%;
 }
 
 .button {
   position: absolute;
-  color: #FFFFFF;
+  color: #ffffff;
   margin: 2px;
-  height: 3rem;
-  width: 3rem;
-  font-size: 1.3rem;
+  height: 50px;
+  width: 50px;
+  font-size: 21px;
   font-weight: bold;
   text-align: center;
-  transition-duration: .3s;
+  transition-duration: 0.6s;
   opacity: 1;
   cursor: pointer;
 }
 
 .button:hover {
-  opacity: .8;
-  transition-duration: .4s;
+  opacity: 0.8;
+  transition-duration: 0.5s;
 }
 
 .add {
-  background-color: #F3A500;
-  line-height: 3rem;
+  background-color: #f3a500;
+  line-height: 50px;
 }
 
 .add-column {
@@ -57,8 +72,8 @@ td {
 }
 
 .remove {
-  background-color: #B20000;
-  line-height: 2.5rem;
+  background-color: #b20000;
+  line-height: 40px;
   display: block;
   visibility: hidden;
 }

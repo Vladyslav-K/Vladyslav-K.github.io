@@ -1,139 +1,222 @@
-// Версия 2.0. Потому что есть пару свободных часов, и потому что могу :)
-// Переделал в функциональном стиле, изменил подход, более внятные имена переменных.
-// Первую попытку не трогал, ибо я сказал что сделаю задание за 2 дня.
-// Этот вариант сделан уже фактически за 3 дня, а я за честность.
-// Чтобы проверить версию сделанную за 2 дня, в index.html замените
-// script.js и styles.css на те, что в папке Version 1.0.
+// Version 2.1
 
-// Найти нужные элементы в DOM:
-const body = document.querySelector('body');
-const table = document.querySelector('.tableMain');
-const addRowButton = document.querySelector('.add-row');
-const addCellButton = document.querySelector('.add-column');
-const removeRowButton = document.querySelector('.remove-row');
-const removeCellButton = document.querySelector('.remove-column');
+// Главные изменения:
+// class для приватности методов;
+// Независимость компонентов друг от друга;
+// Отображение ошибки введённых данных при создании таблицы;
+// Создание таблиц полностью с помощью JS (не считая общих CSS стилей);
+// Кнопка удаления не исчезает при клике, и всегда находится в пределах таблицы.
 
-// Присвоить обработчики клика на кнопки:
-addRowButton.addEventListener('click', () => createRow());
-addCellButton.addEventListener('click', () => createCell());
-removeRowButton.addEventListener('click', () => deleteRow());
-removeCellButton.addEventListener('click', () => deleteCell());
+// Мелкие изменения:
+// Исправлены размеры элементов (из rem в px);
+// Плавные анимации передвижения / исчезновения / появления кнопок удаления.
 
-// (Изменено в 2.0)
-// Сдвигать кнопки относительно ячейки, на которую наведен курсор:
-table.addEventListener('mouseover', event => movingButtons(event));
-// По заданным условиям отображать / скрывать кнопки удаления:
-body.addEventListener('mouseover', event => visibleButtons(event));
+class Table {
+  constructor(column, rows, containerClassName) {
+    // Создать элемент, что будет выводиться
+    // при некорректных введенных данных:
+    let _error = document.createElement("div");
+    _error.className = "error";
+    _error.innerHTML = `
+    <h1>Ошибка</h1>
+    <h2>Пожалуйста, введите корректные начальные данные таблицы!</h2>
+    <h3>
+    Значения строк и колонок должны быть числами больше нуля,
+    <br/>
+    а передаваемое имя контейнера - строкой! 
+    </h3>`;
 
-// (Изменено в 2.0)
-// Функция, что отвечает за работу с видимостью кнопок.
-// Сейчас она работает более правильно, ибо в версии 1.0, при
-// наведении курсора на кнопку, она исчезала через пол секунды.
-// Здесь я это поправил, теперь всё чётко как в ТЗ.
-visibleButtons = ({ target }) => {
-  const closestTable = target.closest('.tableMain');
-  const closestButton = target.closest('.remove');
+    // Проверки на корректность введенных данных.
+    // Если данные некорректные, вместо отрисовки таблиц
+    // вывести пользователю сообщение об ошибке,
+    // а для разработчика дать более конкретную информацию в консоль
+    if (column <= 0 || typeof column != "number") {
+      document.body.append(_error);
+      throw new Error(
+        "Некорректное количество колонок (принимаются только числа больше нуля)"
+      );
+    }
 
-  if (closestTable || closestButton) {
-    showButtons();
+    if (rows <= 0 || typeof rows != "number") {
+      document.body.append(_error);
+      throw new Error(
+        "Некорректное количество колонок (принимаются только числа больше нуля)"
+      );
+    }
+
+    if (typeof containerClassName != "string") {
+      document.body.append(_error);
+      throw new Error("Некорректное имя контейнера (должно быть строкой)");
+    }
+
+    // Сохранить передаваемое имя контейнера
+    // (нужно в будущем для отображения кнопок)
+    this.containerName = containerClassName;
+
+    // Создать все необходимые элементы:
+    this.container = document.createElement("div");
+    this.container.className = `${containerClassName} container`;
+    document.querySelector(".global-container").append(this.container);
+
+    this.table = document.createElement("table");
+    this.table.className = `${containerClassName}-table tableMain`;
+    this.container.append(this.table);
+
+    this.addRowButton = document.createElement("div");
+    this.addRowButton.className = `button add-row add`;
+    this.addRowButton.innerHTML = "+";
+    this.container.append(this.addRowButton);
+
+    this.addColumnButton = document.createElement("div");
+    this.addColumnButton.className = "button add-column add";
+    this.addColumnButton.innerHTML = "+";
+    this.container.append(this.addColumnButton);
+
+    this.removeRowButton = document.createElement("div");
+    this.removeRowButton.className = `button remove-row remove ${containerClassName}-remove-buttons`;
+    this.removeRowButton.innerHTML = "-";
+    this.container.append(this.removeRowButton);
+
+    this.removeColumnButton = document.createElement("div");
+    this.removeColumnButton.className = `button remove-column remove ${containerClassName}-remove-buttons`;
+    this.removeColumnButton.innerHTML = "-";
+    this.container.append(this.removeColumnButton);
+
+    // Присвоить обработчики клика на кнопки:
+    this.addRowButton.addEventListener("click", () => this.createRow());
+    this.addColumnButton.addEventListener("click", () => this.createCell());
+    this.removeRowButton.addEventListener("click", e => this.deleteRow(e));
+    this.removeColumnButton.addEventListener("click", e => this.deleteCell(e));
+
+    // Сдвигать кнопки относительно ячейки, на которую наведен курсор:
+    this.table.addEventListener("mouseover", e => this.movingButtons(e));
+    // По заданным условиям отображать / скрывать кнопки удаления:
+    document.body.addEventListener("mouseover", e => this.visibleButtons(e));
+
+    // Наполнить таблицу заданным количеством столбцов и строк:
+    for (let row = 0; row < rows; row++) {
+      const addRow = this.table.insertRow(row);
+
+      for (let cells = 0; cells < column; cells++) {
+        addRow.insertCell(cells);
+      }
+    }
+  }
+
+  movingButtons = ({ target }) => {
+    // Если курсор наведён на ячейку таблицы...
+    if (target.tagName === "TD") {
+      // ...сдвинуть кнопки удаления относительно неё:
+      this.removeColumnButton.style.left = `${target.offsetLeft}px`;
+      this.removeRowButton.style.top = `${target.offsetTop}px`;
+    }
   };
 
-  if (!closestTable && !closestButton) {
-    hideButtons();
-  };
-};
+  visibleButtons = ({ target }) => {
+    // Найти ближайшую таблицу или кнопку удаления,
+    // и если они есть рядом, отображать кнопки удаления.
+    const closestTable = target.closest(`.${this.containerName}-table`);
+    const closestButton = target.closest(`.${this.containerName}-remove-buttons`);
 
-// (Добавлено в 2.0)
-// Функция, что отвечает за передвижение кнопок:
-movingButtons = ({ target }) => {
-  if (target.tagName === 'TD') {
-    // Найти текущие "координаты" ячейки внутри таблицы...
-    currentColumn = target.cellIndex;
-    currentRow = target.parentNode.rowIndex;
-    // ...и сдвинуть кнопки удаления относительно этих координат:
-    removeCellButton.style.left = `${target.offsetLeft}px`;
-    removeRowButton.style.top = `${target.offsetTop}px`;
-  };
-};
+    if (closestTable || closestButton) {
+      this.showButtons();
+    }
 
-createCell = () => {
-  for (let i = 0; i < table.rows.length; i++) {
-    table.rows[i].insertCell();
-  };
-};
-
-createRow = () => {
-  table.insertRow();
-  // Найти сколько ячеек находится в первой (нулевой) строке,
-  // и вставить столько же ячеек в создаваемую строку
-  for (let i = 0; i < table.rows[0].cells.length; i++) {
-    table.rows[table.rows.length - 1].insertCell(i);
-  };
-};
-
-deleteCell = () => {
-  // В каждой строке таблицы...
-  for (let i = 0; i < table.rows.length; i++) {
-    // ...удалить выбранную ячейку:
-    table.rows[i].deleteCell(currentColumn);
-  };
-  // При клике сразу скрыть кнопки удаления без задержки:
-  displayNoneButtons();
-};
-
-deleteRow = () => {
-  table.deleteRow(currentRow);
-  // При клике сразу скрыть кнопки удаления без задержки:
-  displayNoneButtons();
-};
-
-// (Добавлено в 2.0)
-// Отдельный метод для быстрого скрытия кнопок после нажатия.
-// Если использовать не display а visibility, то будет задержка.
-displayNoneButtons = () => {
-  removeRowButton.style.display = 'none';
-  removeCellButton.style.display = 'none';
-};
-
-hideButtons = () => {
-  removeRowButton.style.visibility = 'hidden';
-  removeCellButton.style.visibility = 'hidden';
-};
-
-// (Изменено в 2.0)
-// Если осталась последняя строка / колонка, кнопку скрывать:
-showButtons = () => {
-  if (table.rows.length > 1) {
-    removeRowButton.style.visibility = 'visible';
-    removeRowButton.style.display = 'block';
+    if (!closestTable && !closestButton) {
+      this.hideButtons();
+    }
   };
 
-  if (table.rows[0].cells.length > 1) {
-    removeCellButton.style.visibility = 'visible';
-    removeCellButton.style.display = 'block';
+  createCell() {
+    for (let i = 0; i < this.table.rows.length; i++) {
+      this.table.rows[i].insertCell();
+    }
+  }
+
+  createRow() {
+    this.table.insertRow();
+
+    for (let i = 0; i < this.table.rows[0].cells.length; i++) {
+      this.table.rows[this.table.rows.length - 1].insertCell(i);
+    }
+  }
+
+  deleteCell({ target }) {
+    // В каждой строке таблицы...
+    for (let i = 0; i < this.table.rows.length; i++) {
+      // ...удалить выбранную ячейку:
+      const currentColumn = target.cellIndex;
+      this.table.rows[i].deleteCell(currentColumn);
+    }
+    // Найти "координаты" последней ячейку нулевой строки:
+    const allCells = this.table.rows[0].cells;
+    const lastCellOffsetLeft = allCells[allCells.length - 1].offsetLeft;
+
+    // И если кнопка при удалении столбца оказывается вне таблицы,
+    // она передвигается к крайнему столбцу. Если при удалении столбца
+    // кнопка остается внутри таблицы, она просто остается на месте.
+    if (target.offsetLeft > lastCellOffsetLeft) {
+      this.removeColumnButton.style.left = `${lastCellOffsetLeft}px`;
+    }
+
+    // Если в таблица остаётся последний столбец,
+    // убрать отображение кнопок удаления:
+    if (this.table.rows[0].cells.length <= 1) {
+      this.displayNoneButtons();
+    }
+  }
+
+  deleteRow({ target }) {
+    // Удалить строку, на которую наведён курсор:
+    const currentRow = target.parentNode.rowIndex;
+    this.table.deleteRow(currentRow);
+
+    // Найти "координаты" последней строки в таблице:
+    const allRows = this.table.rows;
+    const lastRow = allRows[allRows.length - 1].offsetTop;
+
+    // И если кнопка при удалении строки оказывается вне таблицы,
+    // она передвигается к крайней строке. Если при удалении строки
+    // кнопка остается внутри таблицы, она просто остается на месте.
+    if (target.offsetTop > lastRow) {
+      this.removeRowButton.style.top = `${lastRow}px`;
+    }
+
+    // Если в таблица остаётся последняя строка,
+    // убрать отображение кнопок удаления:
+    if (this.table.rows.length <= 1) {
+      this.displayNoneButtons();
+    }
+  }
+
+  showButtons = () => {
+    if (this.table.rows.length > 1) {
+      this.removeRowButton.style.visibility = "visible";
+      this.removeRowButton.style.display = "block";
+      this.removeRowButton.style.opacity = 1;
+    }
+
+    if (this.table.rows[0].cells.length > 1) {
+      this.removeColumnButton.style.visibility = "visible";
+      this.removeColumnButton.style.display = "block";
+      this.removeColumnButton.style.opacity = 1;
+    }
   };
-};
 
-// (Изменено в 2.0)
-const Table = (column, rows) => {
-  // Немного улучшил и расширил проверку вводимых данных,
-  // чтобы на выходе всегда получать таблицу с ячейками.
-  if (Number.isNaN(column) || column == undefined || column <= 0 || typeof column != 'number') {
-    column = 4;
+  hideButtons = () => {
+    this.removeRowButton.style.visibility = "hidden";
+    this.removeColumnButton.style.visibility = "hidden";
+    this.removeRowButton.style.opacity = 0;
+    this.removeColumnButton.style.opacity = 0;
   };
 
-  if (Number.isNaN(rows) || rows == undefined || rows <= 0 || typeof rows != 'number') {
-    rows = 4;
+  displayNoneButtons = () => {
+    this.removeRowButton.style.display = "none";
+    this.removeColumnButton.style.display = "none";
   };
+}
 
-  // Наполнить таблицу заданным количеством таблиц и строк
-  for (let row = 0; row < rows; row++) {
-    const addRow = table.insertRow(row);
-
-    for (let cells = 0; cells < column; cells++) {
-      addRow.insertCell(cells);
-    };
-  };
-};
-
-Table(NaN, undefined, 'hello Bro');
+// При создании таблицы колонки и строки должны быть числами > 0,
+// а имя контейнера (третье значение) - строкой.
+const TestTable1 = new Table(4, 4, "first");
+const TestTable2 = new Table(4, 4, "second");
