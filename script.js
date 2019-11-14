@@ -109,6 +109,8 @@ class Table {
       // ...сдвинуть кнопки удаления относительно неё:
       this.removeColumnButton.style.left = `${target.offsetLeft}px`;
       this.removeRowButton.style.top = `${target.offsetTop}px`;
+      this.currentColumn = target.cellIndex;
+      this.currentRow = target.parentNode.rowIndex;
     }
   };
 
@@ -145,8 +147,7 @@ class Table {
     // В каждой строке таблицы...
     for (let i = 0; i < this.table.rows.length; i++) {
       // ...удалить выбранную ячейку:
-      const currentColumn = target.cellIndex;
-      this.table.rows[i].deleteCell(currentColumn);
+      this.table.rows[i].deleteCell(this.currentColumn);
     }
     // Найти "координаты" последней ячейку нулевой строки:
     const allCells = this.table.rows[0].cells;
@@ -168,8 +169,7 @@ class Table {
 
   deleteRow({ target }) {
     // Удалить строку, на которую наведён курсор:
-    const currentRow = target.parentNode.rowIndex;
-    this.table.deleteRow(currentRow);
+    this.table.deleteRow(this.currentRow);
 
     // Найти "координаты" последней строки в таблице:
     const allRows = this.table.rows;
