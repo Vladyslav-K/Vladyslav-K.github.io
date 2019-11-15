@@ -1,15 +1,16 @@
 // Version 2.1
-
 // Главные изменения:
 // class для приватности методов;
 // Независимость компонентов друг от друга;
 // Отображение ошибки введённых данных при создании таблицы;
 // Создание таблиц полностью с помощью JS (не считая общих CSS стилей);
 // Кнопка удаления не исчезает при клике, и всегда находится в пределах таблицы.
-
 // Мелкие изменения:
 // Исправлены размеры элементов (из rem в px);
 // Плавные анимации передвижения / исчезновения / появления кнопок удаления.
+
+// Version 2.2
+// Исправлен баг с неверным определением ближайшего к кнопке удаления столбца / строки.
 
 class Table {
   constructor(column, rows, containerClassName) {
@@ -26,10 +27,10 @@ class Table {
     а передаваемое имя контейнера - строкой! 
     </h3>`;
 
-    // Проверки на корректность введенных данных.
+    // Проверит на корректность введенные данные.
     // Если данные некорректные, вместо отрисовки таблиц
     // вывести пользователю сообщение об ошибке,
-    // а для разработчика дать более конкретную информацию в консоль
+    // а для разработчика дать более конкретную информацию в консоль:
     if (column <= 0 || typeof column != "number") {
       document.body.append(_error);
       throw new Error(
@@ -40,7 +41,7 @@ class Table {
     if (rows <= 0 || typeof rows != "number") {
       document.body.append(_error);
       throw new Error(
-        "Некорректное количество колонок (принимаются только числа больше нуля)"
+        "Некорректное количество строк (принимаются только числа больше нуля)"
       );
     }
 
@@ -89,7 +90,7 @@ class Table {
     this.removeColumnButton.addEventListener("click", e => this.deleteCell(e));
 
     // Сдвигать кнопки относительно ячейки, на которую наведен курсор:
-    this.table.addEventListener("mouseover", e => this.movingButtons(e));
+    this.container.addEventListener("mouseover", e => this.movingButtons(e));
     // По заданным условиям отображать / скрывать кнопки удаления:
     document.body.addEventListener("mouseover", e => this.visibleButtons(e));
 
@@ -102,6 +103,38 @@ class Table {
       }
     }
   }
+  // (ВАЖНОЕ ПОСЛЕДНЕЕ ИСПРАВЛЕНИЕ)
+  findCurrentCell() {
+    // Найти нулевую строку (потому что она 100% есть)
+    const thisRow = this.table.rows[0];
+    // Перебрать ячейки в нулевой строке, и если положение кнопки
+    // совпадает с положением ячейки, отслеживать эту ячейку.
+    // Положение сравнить по параметру left у кнопки, и отступу слева у ячейки.
+    for (let i = 0, cell; (cell = thisRow.cells[i]); i++) {
+      if (`${cell.offsetLeft}px` == this.removeColumnButton.style.left) {
+        this.currentColumning(cell.cellIndex);
+      }
+    }
+  }
+  // (ВАЖНОЕ ПОСЛЕДНЕЕ ИСПРАВЛЕНИЕ)
+  findCurrentRow() {
+    const thisTable = this.table;
+    // Перебрать все строки в таблице, и если отступ сверху строки
+    // совпадает с параметром top у кнопки, отслеживать строку.
+    for (let i = 0, row; (row = thisTable.rows[i]); i++) {
+      if (`${row.offsetTop}px` == this.removeRowButton.style.top) {
+        this.currentRowing(row.rowIndex);
+      }
+    }
+  }
+
+  currentColumning(cellIndex) {
+    this.currentColumn = cellIndex;
+  }
+
+  currentRowing(rowIndex) {
+    this.currentRow = rowIndex;
+  }
 
   movingButtons = ({ target }) => {
     // Если курсор наведён на ячейку таблицы...
@@ -109,8 +142,8 @@ class Table {
       // ...сдвинуть кнопки удаления относительно неё:
       this.removeColumnButton.style.left = `${target.offsetLeft}px`;
       this.removeRowButton.style.top = `${target.offsetTop}px`;
-      this.currentColumn = target.cellIndex;
-      this.currentRow = target.parentNode.rowIndex;
+      this.currentColumning(target.cellIndex);
+      this.currentRowing(target.parentNode.rowIndex);
     }
   };
 
@@ -118,7 +151,9 @@ class Table {
     // Найти ближайшую таблицу или кнопку удаления,
     // и если они есть рядом, отображать кнопки удаления.
     const closestTable = target.closest(`.${this.containerName}-table`);
-    const closestButton = target.closest(`.${this.containerName}-remove-buttons`);
+    const closestButton = target.closest(
+      `.${this.containerName}-remove-buttons`
+    );
 
     if (closestTable || closestButton) {
       this.showButtons();
@@ -146,47 +181,51 @@ class Table {
   deleteCell({ target }) {
     // В каждой строке таблицы...
     for (let i = 0; i < this.table.rows.length; i++) {
-      // ...удалить выбранную ячейку:
       this.table.rows[i].deleteCell(this.currentColumn);
     }
-    // Найти "координаты" последней ячейку нулевой строки:
+    // Найти "координаты" последней ячейки нулевой строки:
     const allCells = this.table.rows[0].cells;
     const lastCellOffsetLeft = allCells[allCells.length - 1].offsetLeft;
-
     // И если кнопка при удалении столбца оказывается вне таблицы,
     // она передвигается к крайнему столбцу. Если при удалении столбца
     // кнопка остается внутри таблицы, она просто остается на месте.
     if (target.offsetLeft > lastCellOffsetLeft) {
       this.removeColumnButton.style.left = `${lastCellOffsetLeft}px`;
     }
-
-    // Если в таблица остаётся последний столбец,
+    // Если в таблицt остаётся последний столбец,
     // убрать отображение кнопок удаления:
     if (this.table.rows[0].cells.length <= 1) {
       this.displayNoneButtons();
     }
+    // (ВАЖНОЕ ПОСЛЕДНЕЕ ИСПРАВЛЕНИЕ)
+    // После клика обновляем значение this.currentColumn, иначе
+    // оно будет равняться 0, из-за чего будет постоянно
+    // удаляться первая (нулевая) строка, а не выбранная.
+    this.findCurrentCell();
   }
 
   deleteRow({ target }) {
     // Удалить строку, на которую наведён курсор:
     this.table.deleteRow(this.currentRow);
-
     // Найти "координаты" последней строки в таблице:
     const allRows = this.table.rows;
     const lastRow = allRows[allRows.length - 1].offsetTop;
-
     // И если кнопка при удалении строки оказывается вне таблицы,
     // она передвигается к крайней строке. Если при удалении строки
     // кнопка остается внутри таблицы, она просто остается на месте.
     if (target.offsetTop > lastRow) {
       this.removeRowButton.style.top = `${lastRow}px`;
     }
-
     // Если в таблица остаётся последняя строка,
     // убрать отображение кнопок удаления:
     if (this.table.rows.length <= 1) {
       this.displayNoneButtons();
     }
+    // (ВАЖНОЕ ПОСЛЕДНЕЕ ИСПРАВЛЕНИЕ)
+    // После клика обновляем значение this.currentRow, иначе
+    // оно будет равняться 0, из-за чего будет постоянно
+    // удаляться первая (нулевая) строка, а не выбранная.
+    this.findCurrentRow();
   }
 
   showButtons = () => {
