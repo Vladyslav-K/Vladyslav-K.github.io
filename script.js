@@ -27,7 +27,7 @@ class Table {
     а передаваемое имя контейнера - строкой! 
     </h3>`;
 
-    // Проверит на корректность введенные данные.
+    // Проверить на корректность введенные данные.
     // Если данные некорректные, вместо отрисовки таблиц
     // вывести пользователю сообщение об ошибке,
     // а для разработчика дать более конкретную информацию в консоль:
@@ -112,7 +112,7 @@ class Table {
     // Положение сравнить по параметру left у кнопки, и отступу слева у ячейки.
     for (let i = 0, cell; (cell = thisRow.cells[i]); i++) {
       if (`${cell.offsetLeft}px` == this.removeColumnButton.style.left) {
-        this.currentColumning(cell.cellIndex);
+        this.setCurrentColumn(cell.cellIndex);
       }
     }
   }
@@ -123,16 +123,16 @@ class Table {
     // совпадает с параметром top у кнопки, отслеживать строку.
     for (let i = 0, row; (row = thisTable.rows[i]); i++) {
       if (`${row.offsetTop}px` == this.removeRowButton.style.top) {
-        this.currentRowing(row.rowIndex);
+        this.setCurrentRow(row.rowIndex);
       }
     }
   }
 
-  currentColumning(cellIndex) {
+  setCurrentColumn(cellIndex) {
     this.currentColumn = cellIndex;
   }
 
-  currentRowing(rowIndex) {
+  setCurrentRow(rowIndex) {
     this.currentRow = rowIndex;
   }
 
@@ -142,8 +142,8 @@ class Table {
       // ...сдвинуть кнопки удаления относительно неё:
       this.removeColumnButton.style.left = `${target.offsetLeft}px`;
       this.removeRowButton.style.top = `${target.offsetTop}px`;
-      this.currentColumning(target.cellIndex);
-      this.currentRowing(target.parentNode.rowIndex);
+      this.setCurrentColumn(target.cellIndex);
+      this.setCurrentRow(target.parentNode.rowIndex);
     }
   };
 
@@ -192,13 +192,13 @@ class Table {
     if (target.offsetLeft > lastCellOffsetLeft) {
       this.removeColumnButton.style.left = `${lastCellOffsetLeft}px`;
     }
-    // Если в таблицt остаётся последний столбец,
+    // Если в таблице остаётся последний столбец,
     // убрать отображение кнопок удаления:
     if (this.table.rows[0].cells.length <= 1) {
       this.displayNoneButtons();
     }
     // (ВАЖНОЕ ПОСЛЕДНЕЕ ИСПРАВЛЕНИЕ)
-    // После клика обновляем значение this.currentColumn, иначе
+    // После клика обновить значение this.currentColumn, иначе
     // оно будет равняться 0, из-за чего будет постоянно
     // удаляться первая (нулевая) строка, а не выбранная.
     this.findCurrentCell();
@@ -216,13 +216,13 @@ class Table {
     if (target.offsetTop > lastRow) {
       this.removeRowButton.style.top = `${lastRow}px`;
     }
-    // Если в таблица остаётся последняя строка,
+    // Если в таблице остаётся последняя строка,
     // убрать отображение кнопок удаления:
     if (this.table.rows.length <= 1) {
       this.displayNoneButtons();
     }
     // (ВАЖНОЕ ПОСЛЕДНЕЕ ИСПРАВЛЕНИЕ)
-    // После клика обновляем значение this.currentRow, иначе
+    // После клика обновить значение this.currentRow, иначе
     // оно будет равняться 0, из-за чего будет постоянно
     // удаляться первая (нулевая) строка, а не выбранная.
     this.findCurrentRow();
