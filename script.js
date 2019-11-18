@@ -1,28 +1,32 @@
 class Table {
-  constructor(column, rows) {
-    let _error = document.createElement("div");
+  constructor(columns, rows) {
+    // Create element to view error:
+    const _error = document.createElement("div");
     _error.className = "error";
-    _error.innerHTML = `
-    <h1>Ошибка</h1>
-    <h2>Пожалуйста, введите корректные начальные данные таблицы!</h2>
-    <h3>
-    Значения строк и колонок должны быть числами больше нуля,
-    <br/>
-    а передаваемое имя контейнера - строкой! 
-    </h3>`;
+    _error.innerHTML = `<h1>Ошибка</h1>
+      <h2>Пожалуйста, введите корректные начальные данные таблицы!
+      <br/>
+      Значения строк и колонок должны быть числами больше нуля!
+      </h2>`;
 
-    if (column <= 0 || typeof column != "number") {
-      document.body.append(_error);
+    // Validating data values. If the value is incorrect, an error message is displayed:
+    if (columns <= 0 || !Number.isInteger(columns)) {
+      document.querySelector(".global-container").append(_error);
       throw new Error(
-        "Некорректное количество колонок (принимаются только числа больше нуля)"
+        "Invalid number of columns (only numbers greater than zero are accepted)"
       );
     }
 
-    if (rows <= 0 || typeof rows != "number") {
+    if (rows <= 0 || !Number.isInteger(rows)) {
       document.body.append(_error);
       throw new Error(
-        "Некорректное количество строк (принимаются только числа больше нуля)"
+        "Invalid number of rows (only numbers greater than zero are accepted)"
       );
+    }
+
+    if (!columns || !rows) {
+      document.body.append(_error);
+      throw new Error("Need to pass both values - columns and rows");
     }
 
     this.container = document.createElement("div");
@@ -74,7 +78,7 @@ class Table {
     for (let row = 0; row < rows; row++) {
       const addRow = this.table.insertRow(row);
 
-      for (let cells = 0; cells < column; cells++) {
+      for (let cells = 0; cells < columns; cells++) {
         addRow.insertCell(cells);
       }
     }
@@ -91,16 +95,19 @@ class Table {
   };
 
   createCell() {
-    for (let i = 0; i < this.table.rows.length; i++) {
-      this.table.rows[i].insertCell();
+    const rows = this.table.rows;
+
+    for (let i = 0; i < rows.length; i++) {
+      rows[i].insertCell();
     }
   }
 
   createRow() {
     this.table.insertRow();
+    const rows = this.table.rows;
 
-    for (let i = 0; i < this.table.rows[0].cells.length; i++) {
-      this.table.rows[this.table.rows.length - 1].insertCell(i);
+    for (let i = 0; i < rows[0].cells.length; i++) {
+      rows[rows.length - 1].insertCell(i);
     }
   }
 
@@ -166,6 +173,7 @@ class Table {
     this.removeColumnButton.style.opacity = 0;
   };
 }
+
 // Columns and rows must be positive integers greater than zero.
 const TestTable1 = new Table(4, 4);
 const TestTable2 = new Table(4, 4);
