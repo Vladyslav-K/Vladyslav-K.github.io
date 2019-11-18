@@ -1,1 +1,1 @@
-Bro test #1. Version 2.2.
+Bro test #1
