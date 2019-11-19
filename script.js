@@ -31,13 +31,14 @@ class Table {
 
     this.container = document.createElement("div");
     this.container.className = "container";
-    document.querySelector(".global-container").append(this.container);
+    document.body.append(this.container);
 
     this.tableContainer = document.createElement("div");
     this.tableContainer.className = "table-container";
     this.container.append(this.tableContainer);
 
     this.table = document.createElement("table");
+    this.table.draggable = true;
     this.tableContainer.append(this.table);
 
     this.addRowButton = document.createElement("div");
@@ -75,6 +76,9 @@ class Table {
       this.hideButtons()
     );
 
+    this.table.addEventListener("dragstart", (event) => this.onDragStart(event));
+    this.table.addEventListener("dragend", (event) => this.onDragEnd(event));
+
     for (let row = 0; row < rows; row++) {
       const addRow = this.table.insertRow(row);
 
@@ -84,7 +88,36 @@ class Table {
     }
   }
 
-  movingButtons = ({ target }) => {
+  onDragStart({ clientX, clientY, dataTransfer }) {
+    this.offsetX = clientX - this.container.getBoundingClientRect().left;
+    this.offsetY = clientY - this.container.getBoundingClientRect().top;
+
+    let coordX = this.offsetX;
+    let coordY = this.offsetY;
+
+    // If the table has a delete button,
+    // calculate the coordinate offsets relative to it:
+    if (this.removeRowButton.style.display == "block") {
+      coordX -= this.removeRowButton.offsetLeft;
+    }
+
+    if (this.removeColumnButton.style.display == "block") {
+      coordY -= this.removeColumnButton.offsetTop;
+    }
+
+    dataTransfer.setDragImage(this.container, coordX, coordY);
+  }
+
+  onDragEnd({ pageX, pageY }) {
+    let container = this.container.style;
+    container.position = "fixed";
+    container.margin = 0;
+    container.left = pageX - this.offsetX + "px";
+    container.top = pageY - this.offsetY + "px";
+    container.position = "relative";
+  }
+
+  movingButtons({ target }) {
     if (target.tagName === "TD") {
       // Moving buttons relative to the current cell and row:
       this.removeColumnButton.style.left = `${target.offsetLeft}px`;
@@ -92,7 +125,7 @@ class Table {
       this.currentCellIndex = target.cellIndex;
       this.currentRowIndex = target.parentNode.rowIndex;
     }
-  };
+  }
 
   createCell() {
     const rows = this.table.rows;
@@ -152,7 +185,7 @@ class Table {
     }
   }
 
-  showButtons = () => {
+  showButtons() {
     if (this.table.rows.length > 1) {
       this.removeRowButton.style.visibility = "visible";
       this.removeRowButton.style.display = "block";
@@ -164,16 +197,15 @@ class Table {
       this.removeColumnButton.style.display = "block";
       this.removeColumnButton.style.opacity = 1;
     }
-  };
+  }
 
-  hideButtons = () => {
+  hideButtons() {
     this.removeRowButton.style.visibility = "hidden";
     this.removeColumnButton.style.visibility = "hidden";
     this.removeRowButton.style.opacity = 0;
     this.removeColumnButton.style.opacity = 0;
-  };
+  }
 }
 
 // Columns and rows must be positive integers greater than zero.
-const TestTable1 = new Table(4, 4);
-const TestTable2 = new Table(4, 4);
+const myTable = new Table(4, 4);
