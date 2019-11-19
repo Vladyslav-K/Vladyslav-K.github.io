@@ -9,7 +9,7 @@ body {
 
 table {
   border: 1px solid #48aae6;
-  cursor: pointer;
+  cursor: grab;
 }
 
 td {
@@ -30,13 +30,7 @@ td {
   position: relative;
   left: 0;
   top: 0;
-  height: 100%;
   margin: 65px;
-}
-
-.table-container {
-  height: 100%;
-  width: 100%;
 }
 
 .button {

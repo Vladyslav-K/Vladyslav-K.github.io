@@ -38,7 +38,6 @@ class Table {
     this.container.append(this.tableContainer);
 
     this.table = document.createElement("table");
-    this.table.draggable = true;
     this.tableContainer.append(this.table);
 
     this.addRowButton = document.createElement("div");
@@ -61,12 +60,16 @@ class Table {
     this.removeColumnButton.innerHTML = "-";
     this.tableContainer.append(this.removeColumnButton);
 
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.dragging = false;
+
     this.addRowButton.addEventListener("click", () => this.createRow());
     this.addColumnButton.addEventListener("click", () => this.createCell());
     this.removeRowButton.addEventListener("click", () => this.deleteRow());
     this.removeColumnButton.addEventListener("click", () => this.deleteCell());
 
-    this.container.addEventListener("mouseover", (event) =>
+    this.container.addEventListener("mouseover", event =>
       this.movingButtons(event)
     );
     this.tableContainer.addEventListener("mouseenter", () =>
@@ -76,8 +79,10 @@ class Table {
       this.hideButtons()
     );
 
-    this.table.addEventListener("dragstart", (event) => this.onDragStart(event));
-    this.table.addEventListener("dragend", (event) => this.onDragEnd(event));
+    this.table.addEventListener("mousedown", event => this.onDragStart(event));
+    document.addEventListener("mousemove", event => this.onDragging(event));
+    document.addEventListener("mouseup", () => this.onDragEnd());
+    this.table.ondragstart = () => false;
 
     for (let row = 0; row < rows; row++) {
       const addRow = this.table.insertRow(row);
@@ -88,33 +93,24 @@ class Table {
     }
   }
 
-  onDragStart({ clientX, clientY, dataTransfer }) {
+  onDragStart({ clientX, clientY }) {
+    this.dragging = true;
+    this.container.style.position = "absolute";
     this.offsetX = clientX - this.container.getBoundingClientRect().left;
     this.offsetY = clientY - this.container.getBoundingClientRect().top;
-
-    let coordX = this.offsetX;
-    let coordY = this.offsetY;
-
-    // If the table has a delete button,
-    // calculate the coordinate offsets relative to it:
-    if (this.removeRowButton.style.display == "block") {
-      coordX -= this.removeRowButton.offsetLeft;
-    }
-
-    if (this.removeColumnButton.style.display == "block") {
-      coordY -= this.removeColumnButton.offsetTop;
-    }
-
-    dataTransfer.setDragImage(this.container, coordX, coordY);
   }
 
-  onDragEnd({ pageX, pageY }) {
-    let container = this.container.style;
-    container.position = "fixed";
-    container.margin = 0;
-    container.left = pageX - this.offsetX + "px";
-    container.top = pageY - this.offsetY + "px";
-    container.position = "relative";
+  onDragging({ pageX, pageY }) {
+    if (this.dragging) {
+      this.container.style.margin = 0;
+      this.container.style.left = pageX - this.offsetX + "px";
+      this.container.style.top = pageY - this.offsetY + "px";
+    }
+  }
+
+  onDragEnd() {
+    this.dragging = false;
+    this.container.style.position = "relative";
   }
 
   movingButtons({ target }) {
